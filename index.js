@@ -4,6 +4,7 @@ const prependFile = require("prepend-file");
 const login = require("facebook-chat-api");
 
 var timestamp = null;
+var userDict = null;
 
 if (fs.existsSync('appstate.json')) {
   loginWithFile()
@@ -32,11 +33,21 @@ function loginWithEmailAndPassword() {
 
 function askThredId(api) {
   var threadId = readlineSync.question("ThreadId: ");
-  fetchMessages(api, threadId);
+  fetchUserNames(api, threadId);
+}
+
+function fetchUserNames(api, threadId) {
+  api.getThreadInfoGraphQL(threadId, (err, info) => {
+    api.getUserInfo(info.participantIDs, (err, users) => {
+      if(err) return console.error(err);
+      userDict = users;
+      fetchMessages(api, threadId);
+    });
+  });
 }
 
 function fetchMessages(api, threadId) {
-  api.getThreadHistory(threadId, 50, timestamp, (err, history) => {
+  api.getThreadHistoryGraphQL(threadId, 50, timestamp, (err, history) => {
       if (err) return console.error(err);
 
       /*
@@ -52,7 +63,8 @@ function fetchMessages(api, threadId) {
       var text = "";
 
       for (const message of history) {
-        text = text + `${message.senderName}: ${message.body}\n`;
+        const time = convertTimestamp(parseInt(message.timestamp));
+        text = text + `[${time}] ${userDict[message.senderID].name}: ${message.snippet}\n`;
       }
 
       prependFile('history.txt', text, function (err) {
@@ -63,4 +75,16 @@ function fetchMessages(api, threadId) {
 
       fetchMessages(api, threadId);
   });
+}
+
+function convertTimestamp(timestamp) {
+  var d = new Date(timestamp),
+    year = d.getFullYear(),
+    month = ('0' + (d.getMonth() + 1)).slice(-2),
+    day = ('0' + d.getDate()).slice(-2),
+    hour = ('0' + d.getHours()).slice(-2),
+    minute = ('0' + d.getMinutes()).slice(-2),
+    second = ('0' + d.getSeconds()).slice(-2);
+    
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
 }

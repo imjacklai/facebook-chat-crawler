@@ -9,7 +9,7 @@
   "author": "Jack Lai",
   "license": "ISC",
   "dependencies": {
-    "facebook-chat-api": "^1.4.0",
+    "facebook-chat-api": "git@github.com:Schmavery/facebook-chat-api.git",
     "prepend-file": "^1.3.1",
     "readline-sync": "^1.4.7"
   }
